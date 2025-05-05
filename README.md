@@ -139,13 +139,12 @@ la fecha acutal y transformarla en yyyy-mm-dd, como la que utiliza el sistema.
       import org.joda.time.format.DateTimeFormatter;
       
       public class FechaActualJoda {
-      public static void main(String[] args) {
-      LocalDate fechaActual = LocalDate.now();
-      DateTimeFormatter formato = DateTimeFormat.forPattern("yyyy-MM-dd");
-      String fechaFormateada = fechaActual.toString(formato);
-      
-              System.out.println("Fecha actual: " + fechaFormateada);
-          }
+         public static void main(String[] args) {
+            LocalDate fechaActual = LocalDate.now();
+            DateTimeFormatter formato = DateTimeFormat.forPattern("yyyy-MM-dd");
+            String fechaFormateada = fechaActual.toString(formato);
+            System.out.println("Fecha actual: " + fechaFormateada);
+         }
       }
 
 #### Modificación de interfaz de usuario
@@ -206,4 +205,67 @@ Finalmente, se muestran los precios y los diferentes descuentos en varios campos
              interfaz gráfica.
 
 <hr>
+
+# Pauta
+
+1. Los patrones de diseño que son adecuados para la resolución del problema son:
+
+   1. Patrón de Comportamiento: Strategy para los distintos tipos de descuentos y otros que podrían ser adicionados a 
+   futuro.
+   2. Patrón Estructural: Proxy para compatibilizar el ingreso de datos al sistema.
+   3. Patrón Creacional: Singleton para tener un solo punto de configuración del sistema.
+
+2. SOLID y Patrónes:
+   
+   1. Strategy:
+      1. Responsabilidad Única: Separa el algoritmo del contexto.
+      2. Abierto/Cerrado: Nuevas estrategias no requieren modificar código existente.
+      3. Liskov: Todas las estrategias pueden usarse sin alterar el contexto.
+      4. Segregación de Interfaces: Interfaz simple, específica para estrategias.
+      5. Inversión de Dependencias: Contexto depende de abstracción, no de implementación.
+   2. Proxy: 
+      1. Responsabilidad Única: Separa responsabilidades.
+      2. Abierto/Cerrado: Nuevas funcionalidades sin cambiar el objeto real o base.
+      3. Liskov: El proxy se puede usar donde se espera el objeto real.
+      4. Inversión de Dependencias: Cliente depende de la abstracción, no de la implementación concreta.
+   3. Singleton:
+      1. Responsabilidad Única: Mezcla lógica de negocio con control de instancia.
+      2. Abierto/Cerrado: Dificil de extender o sustituir.
+      3. Liskov: Podría cumplir si usa una interfaz.
+      4. Inversión de Dependencias: No suele usar interfaces separadas.
+      5. Inversión de Dependencias: Clases dependientes acceden directamente a una implementación concreta.
+
+3. Rúbricas
+- Patrón Strategy
+
+| Criterio | Descripción esperada                                                                               | Puntaje |
+| -------- | -------------------------------------------------------------------------------------------------- | ------- |
+| 1.1      | Se define una interfaz `EstrategiaDescuento` con un método común para aplicar descuentos           | 2 pts   |
+| 1.2      | Se implementan varias clases concretas de estrategias (cumpleaños, fidelidad, categoría, cantidad) | 2 pts   |
+| 1.3      | Se usa una **lista de estrategias** que permite aplicar múltiples descuentos acumulativos          | 3 pts   |
+| 1.4      | `GerenciadorDescuento` aplica las estrategias de forma desacoplada (`List<EstrategiaDescuento>`)   | 2 pts   |
+| 1.5      | La arquitectura permite agregar nuevas estrategias sin modificar el núcleo del `Gerenciador`       | 1 pt    |
+
+
+
+- Patrón Proxy
+
+| Criterio | Descripción esperada                                                                                         | Puntaje |
+| -------- | ------------------------------------------------------------------------------------------------------------ | ------- |
+| 2.1      | Se define una interfaz común (e.g., `ProxyInterface`) para el acceso a los datos                             | 2 pts   |
+| 2.2      | Se implementa una clase proxy (`CargaClienteProxy`) que carga y **combina datos del CSV y la base de datos** | 3 pts   |
+| 2.3      | El proxy **crea instancias de objetos a partir del CSV** y las une con los objetos persistentes              | 2 pts   |
+| 2.4      | El acceso a los datos desde la interfaz gráfica se realiza **solo a través del proxy**                       | 2 pts   |
+| 2.5      | El proxy incorpora validaciones o filtros al integrar los datos                                              | 1 pt    |
+
+
+- Patrón Singleton
+
+| Criterio | Descripción esperada                                                                           | Puntaje |
+| -------- | ---------------------------------------------------------------------------------------------- | ------- |
+| 3.1      | Se implementa la clase `Configurador` como un Singleton (`getInstance()`, constructor privado) | 4 pts   |
+| 3.2      | Se implementa correctamente el método que **retorna la fecha actual del sistema**              | 2 pts   |
+| 3.3      | La clase encapsula otros valores de configuración del sistema                                  | 2 pts   |
+| 3.4      | Se permite **acceso centralizado** a la configuración, aunque no se use en `Main.java`         | 2 pts   |
+
 

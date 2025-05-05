@@ -1,11 +1,13 @@
-package cl.ucn.modelo;
+package cl.ucn.proxy;
 
+import cl.ucn.modelo.Cliente;
+import cl.ucn.modelo.Producto;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.TypedQuery;
 
 import java.util.List;
 
-public class Servicio {
+public class Servicio implements ProxyInterface {
 
     private final EntityManager em;
 
@@ -26,5 +28,6 @@ public class Servicio {
         query.setParameter("rut", rut);
         return query.getResultList();
     }
+
 
 }

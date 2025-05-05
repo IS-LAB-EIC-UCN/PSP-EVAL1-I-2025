@@ -1,9 +1,11 @@
 package cl.ucn.main;
 
 import cl.ucn.modelo.Cliente;
-import cl.ucn.modelo.GerenciadorDescuento;
 import cl.ucn.modelo.Producto;
-import cl.ucn.modelo.Servicio;
+import cl.ucn.proxy.Servicio;
+import cl.ucn.proxy.CargaClienteProxy;
+import cl.ucn.singleton.Configurador;
+import cl.ucn.strategy.*;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
@@ -18,6 +20,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 
+import java.util.Collections;
 import java.util.List;
 
 
@@ -68,7 +71,8 @@ public class Main extends Application {
         anhoRegistroTxt.setEditable(Boolean.FALSE);
         Text fechaActualLbl = new Text("Fecha de Hoy: ");
         TextField fechaActualTxt = new TextField();
-        fechaActualTxt.setText("2024-10-25");
+        //Uso de Singleton
+        fechaActualTxt.setText(Configurador.getInstance().getFechaActual());
         fechaActualTxt.setEditable(Boolean.FALSE);
         Text tableLbl = new Text("Lista de Productos Comprados");
         TableView<Producto> table = new TableView<>();
@@ -119,17 +123,28 @@ public class Main extends Application {
             if (clienteSeleccionado != null) {
                 // Una nueva instancia de servicio
                 Servicio servicio = new Servicio(em);
-                List<Producto> productos = servicio.getProductosByRut(clienteSeleccionado.getRut());
-                GerenciadorDescuento gerenciadorDescuento = new GerenciadorDescuento();
-                List<Integer> precios = gerenciadorDescuento.calcularPrecioFinal(productos, clienteSeleccionado.getFechaNacimiento(),
+                CargaClienteProxy cargaClienteProxy = new CargaClienteProxy(servicio);
+                List<Producto> productos = cargaClienteProxy.getClientes().stream()
+                        .filter(cliente -> cliente.getRut().equals(clienteSeleccionado.getRut()))
+                        .findFirst()
+                        .map(Cliente::getProductos)
+                        .orElse(Collections.emptyList());
+                GerenciadorDescuento gerenciadorDescuento = new GerenciadorDescuento(productos, clienteSeleccionado.getFechaNacimiento(),
                         String.valueOf(clienteSeleccionado.getAnhoRegistro()), fechaActualTxt.getText());
+                gerenciadorDescuento.ingresarEstrategia(new EstrategiaDescuentoFidelidad());
+                gerenciadorDescuento.ingresarEstrategia(new EstrategiaDescuentoCumpleanhos());
+                gerenciadorDescuento.ingresarEstrategia(new EstrategiaDescuentoCategoria());
+                gerenciadorDescuento.ingresarEstrategia(new EstrategiaDescuentoProductos());
+                gerenciadorDescuento.aplicarEstrategia();
+                List<Double> precios = gerenciadorDescuento.getValores();
 
                 precioInicialTxt.setText(String.valueOf(precios.get(0)));
                 descuentoFidelidadTxt.setText(String.valueOf(precios.get(1)));
                 descuentoCumpleanhosTxt.setText(String.valueOf(precios.get(2)));
                 descuentoCatergoriaTxt.setText(String.valueOf(precios.get(3)));
                 descuentoProductosTxt.setText(String.valueOf(precios.get(4)));
-                precioFinalTxt.setText(String.valueOf(precios.get(5)));
+                double pFinal = precios.get(0)-precios.get(1)-precios.get(2)-precios.get(3)-precios.get(4);
+                precioFinalTxt.setText(String.valueOf(pFinal));
             }
         });
 
@@ -137,7 +152,12 @@ public class Main extends Application {
             Cliente selectedCliente = comboBox.getSelectionModel().getSelectedItem();
             if (selectedCliente != null) {
                 Servicio servicio = new Servicio(em);
-                List<Producto> productos = servicio.getProductosByRut(selectedCliente.getRut());
+                CargaClienteProxy cargaClienteProxy = new CargaClienteProxy(servicio);
+                List<Producto> productos = cargaClienteProxy.getClientes().stream()
+                        .filter(cliente -> cliente.getRut().equals(selectedCliente.getRut()))
+                        .findFirst()
+                        .map(Cliente::getProductos)
+                        .orElse(Collections.emptyList());
                 fechaNacimientoTxt.setText(selectedCliente.getFechaNacimiento());
                 anhoRegistroTxt.setText(String.valueOf(selectedCliente.getAnhoRegistro()));
                 this.fillTableView(table, productos);
@@ -199,8 +219,9 @@ public class Main extends Application {
 
     public List<Cliente> fillComboboxCliente(){
 
-        Servicio servicio = new Servicio(this.em);
-        return servicio.getClientes();
+        Servicio servicio = new Servicio(em);
+        CargaClienteProxy cargaClienteProxy = new CargaClienteProxy(servicio);
+        return cargaClienteProxy.getClientes();
     }
 
     private void fillTableView(TableView<Producto> tableView, List<Producto> productos) {
